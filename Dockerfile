@@ -4,10 +4,10 @@ COPY . .
 RUN go build -o server ./main.go
 
 
-FROM node:18.0.0 AS FRONT
-WORKDIR /web
-COPY ./web .
-RUN yarn install --frozen-lockfile && yarn run build
+#FROM node:18.0.0 AS FRONT
+#WORKDIR /web
+#COPY ./web .
+#RUN yarn install --frozen-lockfile && yarn run build
 
 FROM debian:latest AS STANDARD
 LABEL MAINTAINER="https://casibase.org/"
