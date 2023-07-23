@@ -7,8 +7,7 @@ RUN go build -o server ./main.go
 FROM node:18.0.0 AS FRONT
 WORKDIR /web
 COPY ./web .
-RUN yarn config set registry https://registry.npmmirror.com
-RUN yarn install --frozen-lockfile --network-timeout 1000000 && yarn run build
+RUN yarn install --frozen-lockfile && yarn run build
 
 FROM debian:latest AS STANDARD
 LABEL MAINTAINER="https://casibase.org/"
