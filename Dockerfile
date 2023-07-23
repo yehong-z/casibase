@@ -17,7 +17,7 @@ ENV BUILDX_ARCH="${TARGETOS:-linux}_${TARGETARCH:-amd64}"
 
 WORKDIR /
 COPY --from=BACK  /go/src/casibase/ ./
-COPY --from=FRONT /web/build ./web/build
+#COPY --from=FRONT /web/build ./web/build
 
 
 ENTRYPOINT ["/bin/bash"]
