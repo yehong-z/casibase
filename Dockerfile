@@ -1,6 +1,8 @@
 FROM golang:1.19 AS BACK
 WORKDIR /go/src/casibase
 COPY . .
+ENV  GOPROXY=https://goproxy.cn
+
 RUN go build -o server ./main.go
 
 
