@@ -17,9 +17,12 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
+	"time"
 
 	"github.com/casbin/casibase/ai"
+	"github.com/casbin/casibase/connect"
 	"github.com/casbin/casibase/object"
 	"github.com/casbin/casibase/util"
 )
@@ -250,6 +253,11 @@ func (c *ApiController) AddMessage() {
 			c.ResponseError(fmt.Sprintf("chat:The chat: %s is not found", chatId))
 			return
 		}
+
+		message.ReplyTo = chat.User1
+		if chat.User1 == message.Author {
+			message.ReplyTo = chat.User2
+		}
 	}
 
 	success, err := object.AddMessage(&message)
@@ -276,6 +284,8 @@ func (c *ApiController) AddMessage() {
 				return
 			}
 		}
+
+		connect.NewMessageService().SendMessage(&message)
 	}
 
 	c.ResponseOk(success)
@@ -296,4 +306,31 @@ func (c *ApiController) DeleteMessage() {
 	}
 
 	c.ResponseOk(success)
+}
+
+func (c *ApiController) SubscribeMessage() {
+	id := c.Input().Get("id")
+	_, name := util.GetOwnerAndNameFromId(id)
+	msgService := connect.NewMessageService()
+	conn, cancel, err := msgService.Connect(name)
+	if err != nil {
+		c.ResponseErrorStream(err.Error())
+	}
+
+	defer cancel()
+	// Stream message to client
+	c.Stream(func(w io.Writer) bool {
+		select {
+		case message := <-conn:
+			msg, err := json.Marshal(message)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+
+			c.SSEvent("message", string(msg))
+			return true
+		case <-time.Tick(time.Second):
+			return true
+		}
+	})
 }

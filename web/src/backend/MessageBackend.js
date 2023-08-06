@@ -85,3 +85,11 @@ export function deleteMessage(message) {
     body: JSON.stringify(newMessage),
   }).then(res => res.json());
 }
+
+export function subscribeMessage(owner, name, onMessage, onError) {
+  const eventSource = new EventSource(`${Setting.ServerUrl}/api/subscribe-message?id=${owner}/${encodeURIComponent(name)}`);
+
+  eventSource.addEventListener("message", (e) => {
+    onMessage(e.data);
+  });
+}

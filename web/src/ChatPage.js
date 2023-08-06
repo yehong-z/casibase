@@ -38,7 +38,7 @@ class ChatPage extends BaseListPage {
     this.fetch();
   }
 
-  newChat(chat) {
+  newChat(userName, chatType) {
     const randomName = Setting.getRandomName();
     return {
       owner: "admin", // this.props.account.applicationName,
@@ -46,12 +46,12 @@ class ChatPage extends BaseListPage {
       createdTime: moment().format(),
       updatedTime: moment().format(),
       // organization: this.props.account.owner,
-      displayName: `New Chat - ${randomName}`,
-      type: "AI",
-      category: chat !== undefined ? chat.category : "Chat Category - 1",
-      user1: `${this.props.account.owner}/${this.props.account.name}`,
-      user2: "",
-      users: [`${this.props.account.owner}/${this.props.account.name}`],
+      displayName: `chat_${randomName}`,
+      type: chatType,
+      category: "Chat Category - 1",
+      user1: `${this.props.account.name}`,
+      user2: `${userName}`,
+      users: [`${this.props.account.name}`],
       messageCount: 0,
     };
   }
@@ -65,7 +65,7 @@ class ChatPage extends BaseListPage {
       // organization: this.props.account.owner,
       chat: this.state.chatName,
       replyTo: "",
-      author: `${this.props.account.owner}/${this.props.account.name}`,
+      author: `${this.props.account.name}`,
       text: text,
     };
   }
@@ -125,8 +125,8 @@ class ChatPage extends BaseListPage {
       });
   }
 
-  addChat(chat) {
-    const newChat = this.newChat(chat);
+  addChat(userName, chatType) {
+    const newChat = this.newChat(userName, chatType);
     ChatBackend.addChat(newChat)
       .then((res) => {
         if (res.status === "ok") {
@@ -192,9 +192,8 @@ class ChatPage extends BaseListPage {
       this.getMessages(chat.name);
     };
 
-    const onAddChat = () => {
-      const chat = this.getCurrentChat();
-      this.addChat(chat);
+    const onAddChat = (userName, chatType) => {
+      this.addChat(userName, chatType);
     };
 
     const onDeleteChat = (i) => {
@@ -213,31 +212,9 @@ class ChatPage extends BaseListPage {
     return (
       <div style={{display: "flex", height: "calc(100vh - 136px)"}}>
         <div style={{width: "250px", height: "100%", backgroundColor: "white", borderRight: "1px solid rgb(245,245,245)", borderBottom: "1px solid rgb(245,245,245)"}}>
-          <ChatMenu ref={this.menu} chats={chats} onSelectChat={onSelectChat} onAddChat={onAddChat} onDeleteChat={onDeleteChat} />
+          <ChatMenu ref={this.menu} chats={chats} onSelectChat={onSelectChat} onAddChat={onAddChat} onDeleteChat={onDeleteChat} account={this.props.account} />
         </div>
-        <div style={{flex: 1, height: "100%", backgroundColor: "white", position: "relative"}}>
-          {
-            (this.state.messages === undefined || this.state.messages === null) ? null : (
-              <div style={{
-                position: "absolute",
-                top: -50,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundImage: "url(https://cdn.casbin.org/img/casdoor-logo_1185x256.png)",
-                backgroundPosition: "center",
-                backgroundRepeat: "no-repeat",
-                backgroundSize: "200px auto",
-                backgroundBlendMode: "luminosity",
-                filter: "grayscale(80%) brightness(140%) contrast(90%)",
-                opacity: 0.5,
-                pointerEvents: "none",
-              }}>
-              </div>
-            )
-          }
-          <ChatBox messages={this.state.messages} sendMessage={(text) => {this.sendMessage(text);}} account={this.props.account} />
-        </div>
+        <ChatBox messages={this.state.messages} sendMessage={(text) => {this.sendMessage(text);}} account={this.props.account} chatName={this.state.chatName} />
       </div>
     );
   }
@@ -280,6 +257,14 @@ class ChatPage extends BaseListPage {
           }
         }
       });
+
+    MessageBackend.subscribeMessage("admin", this.props.account.name, (e) => {
+      const msg = JSON.parse(e);
+      if (msg.chat === this.getCurrentChat().name) {
+        this.state.messages.push(msg);
+        this.setState({});
+      }
+    });
   };
 }
 

@@ -15,16 +15,37 @@
 import React from "react";
 import {Avatar, ChatContainer, ConversationHeader, MainContainer, Message, MessageInput, MessageList} from "@chatscope/chat-ui-kit-react";
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
-
-const robot = "https://cdn.casbin.com/casdoor/resource/built-in/admin/gpt.png";
+import * as AccountBackend from "./backend/AccountBackend";
 
 class ChatBox extends React.Component {
   constructor(props) {
     super(props);
+    this.state = {
+      Avatars: new Map(),
+    };
   }
 
   handleSend = (innerHtml, textContent) => {
     this.props.sendMessage(textContent);
+  };
+
+  getAvatar = (name, setAvatar) => {
+    if (name === this.props.account.name) {
+      setAvatar(this.props.account.avatar);
+    } else {
+      if (this.state.Avatars.has(name)) {
+        setAvatar(this.state.Avatars.get(name));
+      } else {
+        AccountBackend.getUser(name).then((res) => {
+          // eslint-disable-next-line no-console
+          console.log(res);
+          if (res.state === "ok" && res.data.avatar !== null) {
+            this.state.Avatars.set(name, res.data.avatar);
+            setAvatar(res.data.avatar);
+          }
+        });
+      }
+    }
   };
 
   render() {
@@ -32,22 +53,35 @@ class ChatBox extends React.Component {
     if (messages === null) {
       messages = [];
     }
+
+    messages.forEach(msg => {
+      if (msg.author === this.props.account.name) {
+        msg.position = "tr";
+        msg.direction = "outgoing";
+        this.getAvatar(msg.author, (userAvatar) => {
+          msg.avatar = userAvatar;
+        });
+      } else {
+        msg.position = "tl";
+        msg.direction = "incoming";
+        msg.avatar = this.props.account.avatar;
+      }
+    });
+
     return (
       <MainContainer style={{display: "flex", width: "100%", height: "100%"}} >
         <ChatContainer style={{display: "flex", width: "100%", height: "100%"}}>
           <ConversationHeader>
-            <Avatar src={robot} name="AI" />
-            <ConversationHeader.Content userName="AI" />
+            <ConversationHeader.Content userName={this.props.chatName} />
           </ConversationHeader>
           <MessageList>
             {messages.map((message, index) => (
               <Message key={index} model={{
                 message: message.text,
-                sentTime: "just now",
                 sender: message.name,
-                direction: message.author === "AI" ? "incoming" : "outgoing",
-              }} avatarPosition={message.author === "AI" ? "tl" : "tr"}>
-                <Avatar src={message.author === "AI" ? robot : this.props.account.avatar} name="GPT" />
+                direction: message.direction,
+              }} avatarPosition={message.position}>
+                <Avatar src={message.avatar} />
               </Message>
             ))}
           </MessageList>

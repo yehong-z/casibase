@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import React from "react";
-import {Button, Menu} from "antd";
+import {Button, Input, Menu, Modal, Select} from "antd";
 import {DeleteOutlined, LayoutOutlined, PlusOutlined} from "@ant-design/icons";
 
 class ChatMenu extends React.Component {
@@ -22,10 +22,13 @@ class ChatMenu extends React.Component {
 
     const items = this.chatsToItems(this.props.chats);
     const openKeys = items.map((item) => item.key);
-
     this.state = {
       openKeys: openKeys,
       selectedKeys: ["0-0"],
+      isModalOpen: false,
+      inputUserName: "",
+      inputChatType: "User",
+      showUserNameInput: true,
     };
   }
 
@@ -36,6 +39,11 @@ class ChatMenu extends React.Component {
         categories[chat.category] = [];
       }
       categories[chat.category].push(chat);
+      if (this.props.account.name === chat.user1) {
+        chat.displayName = chat.user2;
+      } else {
+        chat.displayName = chat.user1;
+      }
     });
 
     const selectedKeys = this.state === undefined ? [] : this.state.selectedKeys;
@@ -96,6 +104,19 @@ class ChatMenu extends React.Component {
     });
   }
 
+  showModal = () => {
+    this.setState({isModalOpen: true});
+  };
+
+  handleOk = () => {
+    this.setState({isModalOpen: false});
+    this.props.onAddChat(this.state.inputUserName, this.state.inputChatType);
+  };
+
+  handleCancel = () => {
+    this.setState({isModalOpen: false});
+  };
+
   onSelect = (info) => {
     const [categoryIndex, chatIndex] = info.selectedKeys[0].split("-").map(Number);
     const selectedItem = this.chatsToItems(this.props.chats)[categoryIndex].children[chatIndex];
@@ -134,6 +155,19 @@ class ChatMenu extends React.Component {
     }
   };
 
+  handleUserChange = (e) => {
+    this.setState({inputUserName: e.target.value});
+  };
+
+  handleChatTypeChange = (e) => {
+    this.setState({inputChatType: e});
+    if (e === "AI") {
+      this.setState({showUserNameInput: false});
+    } else {
+      this.setState({showUserNameInput: true});
+    }
+  };
+
   render() {
     const items = this.chatsToItems(this.props.chats);
 
@@ -159,10 +193,23 @@ class ChatMenu extends React.Component {
           onMouseUp={(e) => {
             e.currentTarget.style.borderColor = "rgba(89,54,213,0.6)";
           }}
-          onClick={this.props.onAddChat}
+          onClick={this.showModal}
         >
           New Chat
         </Button>
+        <Modal title="add chat" open={this.state.isModalOpen} onOk={this.handleOk} onCancel={this.handleCancel}>
+          <p>
+            chat type <Select
+              defaultValue="User"
+              onChange={this.handleChatTypeChange}
+              options={[
+                {value: "AI", label: "AI"},
+                {value: "User", label: "User"},
+              ]}
+            />
+          </p>
+          {this.state.showUserNameInput && <p><Input placeholder="user name" onChange={this.handleUserChange}></Input></p>}
+        </Modal>
         <Menu
           style={{maxHeight: "calc(100vh - 140px - 40px - 8px)", overflowY: "auto"}}
           mode="inline"
