@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"github.com/casbin/casibase/ai"
-	"github.com/casbin/casibase/connect"
 	"github.com/casbin/casibase/object"
+	"github.com/casbin/casibase/service"
 	"github.com/casbin/casibase/util"
 )
 
@@ -285,7 +285,7 @@ func (c *ApiController) AddMessage() {
 			}
 		}
 
-		connect.NewMessageService().SendMessage(&message)
+		service.NewMessageService().SendMessage(&message)
 	}
 
 	c.ResponseOk(success)
@@ -311,7 +311,7 @@ func (c *ApiController) DeleteMessage() {
 func (c *ApiController) SubscribeMessage() {
 	id := c.Input().Get("id")
 	_, name := util.GetOwnerAndNameFromId(id)
-	msgService := connect.NewMessageService()
+	msgService := service.NewMessageService()
 	conn, cancel, err := msgService.Connect(name)
 	if err != nil {
 		c.ResponseErrorStream(err.Error())
